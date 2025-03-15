@@ -12,15 +12,7 @@ app.use(express.json());
 app.use(cors());
 
 
-const path = require('path');
 
-// Serve static files from the 'public' folder
-app.use(express.static(path.join(__dirname, 'public')));
-
-// Serve index.html when visiting "/"
-app.get("/", (req, res) => {
-    res.sendFile(path.join(__dirname, "public", "index.html"));
-});
 
 
 
