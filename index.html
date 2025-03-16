@@ -12,22 +12,27 @@
     <style>
         body {
             background-color: #f8f9fa;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        .dark-mode {
+            background-color: #121212;
+            color: white;
         }
         .container {
             max-width: 800px;
             margin-top: 40px;
         }
-        h1 {
-            text-align: center;
-            color: #007bff;
+        .navbar {
+            padding: 10px;
         }
         .product-card {
             border-radius: 10px;
             overflow: hidden;
-            transition: transform 0.3s ease-in-out;
+            transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
         }
         .product-card:hover {
             transform: scale(1.05);
+            box-shadow: 0px 10px 20px rgba(0, 0, 0, 0.3);
         }
         .product-card img {
             height: 200px;
@@ -44,10 +49,45 @@
 </head>
 <body>
 
-<div class="container">
-    <h1 class="mb-4">🛍️ Product Catalogue</h1>
+<!-- Navbar -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container">
+        <a class="navbar-brand" href="#">🛍️ Product Catalogue</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item"><a class="nav-link" href="#">Home</a></li>
+                <li class="nav-item"><a class="nav-link" href="#">Products</a></li>
+                <li class="nav-item"><a class="nav-link" href="#">About</a></li>
+                <li class="nav-item">
+                    <button id="darkModeToggle" class="btn btn-sm btn-light">🌙 Dark Mode</button>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
 
-    <!-- Product Form -->
+<!-- Main Content -->
+<div class="container">
+    <h1 class="mb-4 text-center">🛍️ Product Catalogue</h1>
+
+    <!-- Search & Sorting -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <input type="text" id="searchBox" class="form-control" placeholder="🔍 Search for products...">
+        </div>
+        <div class="col-md-6">
+            <select id="sortBy" class="form-select">
+                <option value="default">Sort By</option>
+                <option value="lowToHigh">Price: Low to High</option>
+                <option value="highToLow">Price: High to Low</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Add Product Form -->
     <div class="card shadow p-4 mb-4">
         <h3 class="text-center mb-3">Add a New Product</h3>
         <form id="productForm" class="row g-3">
@@ -75,7 +115,9 @@
 
     <!-- Product List -->
     <h2 class="text-center mb-4">📦 All Products</h2>
-    <div id="productList" class="row"></div>
+    <div id="productList" class="row">
+        <p id="loadingText" class="text-center text-muted">Loading products...</p>
+    </div>
 </div>
 
 <!-- Bootstrap JS -->
@@ -83,28 +125,25 @@
 
 <!-- JavaScript Logic -->
 <script>
-    document.getElementById("productForm").addEventListener("submit", async (e) => {
-        e.preventDefault();
-        let formData = new FormData();
-        formData.append("name", document.getElementById("name").value);
-        formData.append("description", document.getElementById("description").value);
-        formData.append("price", document.getElementById("price").value);
-        formData.append("image", document.getElementById("image").files[0]);
+    const apiUrl = "/"; // Use relative path for Azure deployment
+    let products = [];
 
-        let res = await fetch("http://localhost:3000/addProduct", {
-            method: "POST",
-            body: formData
-        });
-        let data = await res.json();
-        alert(data.message);
-        fetchProducts();
-    });
-
+    // Fetch Products from Backend
     async function fetchProducts() {
-        let res = await fetch("http://localhost:3000/products");
-        let products = await res.json();
-        document.getElementById("productList").innerHTML = products.map(p =>
-            `<div class="col-md-6 mb-4">
+        document.getElementById("loadingText").innerText = "Loading products...";
+        try {
+            let res = await fetch(`${apiUrl}products`);
+            products = await res.json();
+            renderProducts(products);
+        } catch (error) {
+            document.getElementById("loadingText").innerText = "Failed to load products.";
+        }
+    }
+
+    // Render Products
+    function renderProducts(productList) {
+        document.getElementById("productList").innerHTML = productList.length ? productList.map(p =>
+            `<div class="col-md-4 mb-4">
                 <div class="card product-card shadow">
                     <img src="${p.imageUrl}" class="card-img-top" alt="Product Image">
                     <div class="card-body text-center">
@@ -114,13 +153,50 @@
                     </div>
                 </div>
             </div>`
-        ).join("");
+        ).join("") : "<p class='text-center text-muted'>No products available.</p>";
     }
+
+    // Search Products
+    document.getElementById("searchBox").addEventListener("input", (e) => {
+        let searchTerm = e.target.value.toLowerCase();
+        let filteredProducts = products.filter(p => p.name.toLowerCase().includes(searchTerm));
+        renderProducts(filteredProducts);
+    });
+
+    // Sorting
+    document.getElementById("sortBy").addEventListener("change", (e) => {
+        let sortedProducts = [...products];
+        if (e.target.value === "lowToHigh") sortedProducts.sort((a, b) => a.price - b.price);
+        if (e.target.value === "highToLow") sortedProducts.sort((a, b) => b.price - a.price);
+        renderProducts(sortedProducts);
+    });
+
+    // Dark Mode
+    document.getElementById("darkModeToggle").addEventListener("click", () => {
+        document.body.classList.toggle("dark-mode");
+        localStorage.setItem("darkMode", document.body.classList.contains("dark-mode"));
+    });
+
+    // Restore Dark Mode
+    if (localStorage.getItem("darkMode") === "true") {
+        document.body.classList.add("dark-mode");
+    }
+
+    // Submit Form
+    document.getElementById("productForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        let formData = new FormData();
+        formData.append("name", document.getElementById("name").value);
+        formData.append("description", document.getElementById("description").value);
+        formData.append("price", document.getElementById("price").value);
+        formData.append("image", document.getElementById("image").files[0]);
+
+        await fetch(`${apiUrl}addProduct`, { method: "POST", body: formData });
+        fetchProducts();
+    });
 
     fetchProducts();
 </script>
 
 </body>
 </html>
-
-
