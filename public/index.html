@@ -125,7 +125,8 @@
 
 <!-- JavaScript Logic -->
 <script>
-    const apiUrl = "/"; // Use relative path for Azure deployment
+    const apiUrl = "/"; // Relative API path for Azure
+
     let products = [];
 
     // Fetch Products from Backend
@@ -142,18 +143,20 @@
 
     // Render Products
     function renderProducts(productList) {
-        document.getElementById("productList").innerHTML = productList.length ? productList.map(p =>
-            `<div class="col-md-4 mb-4">
-                <div class="card product-card shadow">
-                    <img src="${p.imageUrl}" class="card-img-top" alt="Product Image">
-                    <div class="card-body text-center">
-                        <h5 class="card-title">${p.name}</h5>
-                        <p class="card-text">${p.description}</p>
-                        <h6 class="text-primary">$${p.price}</h6>
+        document.getElementById("productList").innerHTML = productList.length 
+            ? productList.map(p => `
+                <div class="col-md-4 mb-4">
+                    <div class="card product-card shadow">
+                        <img src="${p.imageUrl}" class="card-img-top" alt="Product Image">
+                        <div class="card-body text-center">
+                            <h5 class="card-title">${p.name}</h5>
+                            <p class="card-text">${p.description}</p>
+                            <h6 class="text-primary">$${p.price}</h6>
+                        </div>
                     </div>
                 </div>
-            </div>`
-        ).join("") : "<p class='text-center text-muted'>No products available.</p>";
+            `).join("") 
+            : "<p class='text-center text-muted'>No products available.</p>";
     }
 
     // Search Products
@@ -171,7 +174,7 @@
         renderProducts(sortedProducts);
     });
 
-    // Dark Mode
+    // Dark Mode Toggle
     document.getElementById("darkModeToggle").addEventListener("click", () => {
         document.body.classList.toggle("dark-mode");
         localStorage.setItem("darkMode", document.body.classList.contains("dark-mode"));
@@ -182,17 +185,13 @@
         document.body.classList.add("dark-mode");
     }
 
-    // Submit Form
+    // Submit Form (Instantly Updates UI)
     document.getElementById("productForm").addEventListener("submit", async (e) => {
         e.preventDefault();
-        let formData = new FormData();
-        formData.append("name", document.getElementById("name").value);
-        formData.append("description", document.getElementById("description").value);
-        formData.append("price", document.getElementById("price").value);
-        formData.append("image", document.getElementById("image").files[0]);
-
+        let formData = new FormData(e.target);
         await fetch(`${apiUrl}addProduct`, { method: "POST", body: formData });
-        fetchProducts();
+        e.target.reset();
+        fetchProducts(); // ✅ Immediately fetch new products
     });
 
     fetchProducts();
