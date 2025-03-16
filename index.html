@@ -152,8 +152,7 @@
                         <h6 class="text-primary">$${p.price}</h6>
                     </div>
                 </div>
-            </div>`
-        ).join("") : "<p class='text-center text-muted'>No products available.</p>";
+            </div>`).join("") : "<p class='text-center text-muted'>No products available.</p>";
     }
 
     // Search Products
@@ -182,7 +181,7 @@
         document.body.classList.add("dark-mode");
     }
 
-    // Submit Form
+    // Submit Form (✅ Fix: Instantly Update UI)
     document.getElementById("productForm").addEventListener("submit", async (e) => {
         e.preventDefault();
         let formData = new FormData();
@@ -191,8 +190,12 @@
         formData.append("price", document.getElementById("price").value);
         formData.append("image", document.getElementById("image").files[0]);
 
-        await fetch(`${apiUrl}addProduct`, { method: "POST", body: formData });
-        fetchProducts();
+        let res = await fetch(`${apiUrl}addProduct`, { method: "POST", body: formData });
+        let newProduct = await res.json();
+        products.unshift(newProduct.product); 
+        renderProducts(products);
+
+        e.target.reset(); 
     });
 
     fetchProducts();
