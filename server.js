@@ -1,20 +1,20 @@
-
-
 require("dotenv").config();
 const express = require("express");
 const multer = require("multer");
 const cors = require("cors");
+const path = require("path");
 const AWS = require("aws-sdk");
 const { BlobServiceClient, StorageSharedKeyCredential } = require("@azure/storage-blob");
 
 const app = express();
 app.use(express.json());
 app.use(cors());
+app.use(express.static(path.join(__dirname, "public"))); // Serve static files
 
-
-
-
-
+// ✅ Serve frontend (`index.html`)
+app.get("/", (req, res) => {
+    res.sendFile(path.join(__dirname, "public", "index.html"));
+});
 
 // Configure AWS S3
 const s3 = new AWS.S3({
@@ -23,7 +23,7 @@ const s3 = new AWS.S3({
     region: process.env.AWS_REGION
 });
 
-// Configure Azure Blob Storage for Image Uploads
+// Configure Azure Blob Storage
 const blobServiceClient = new BlobServiceClient(
     `https://${process.env.AZURE_STORAGE_ACCOUNT}.blob.core.windows.net`,
     new StorageSharedKeyCredential(process.env.AZURE_STORAGE_ACCOUNT, process.env.AZURE_STORAGE_ACCESS_KEY)
@@ -42,7 +42,7 @@ async function uploadToAzure(file) {
     return blockBlobClient.url; // Return public image URL
 }
 
-// API: Add Product (Uploads Image to Azure, Saves Data to S3)
+// ✅ API: Add Product (Uploads Image to Azure, Saves Data to S3)
 app.post("/addProduct", upload.single("image"), async (req, res) => {
     try {
         const { name, description, price } = req.body;
@@ -60,13 +60,13 @@ app.post("/addProduct", upload.single("image"), async (req, res) => {
         };
         await s3.upload(params).promise();
 
-        res.json({ message: "Product added!", product });
+        res.json({ message: "✅ Product added!", product });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
-// API: List All Products (Retrieve JSON Files from S3)
+// ✅ API: List All Products (Retrieve JSON Files from S3)
 app.get("/products", async (req, res) => {
     try {
         const params = {
@@ -86,6 +86,6 @@ app.get("/products", async (req, res) => {
     }
 });
 
-// Start Server
+// ✅ Start Server
 const PORT = process.env.PORT || 8080;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
